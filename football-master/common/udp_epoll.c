@@ -61,7 +61,7 @@ int udp_accept(int fd, struct User *user) {
     }
 
     response.type = 0;
-    strcpy(response.msg, "Login Success. Enjoy yourself!");
+    sprintf(response.msg, "Login Success %s . Enjoy yourself!",request.name);
     sendto(fd, (void *)&response, sizeof(response), 0, (struct sockaddr *)&client, len);
     
     if (request.team) {

@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 			strcpy(request.msg, get_conf_value(conf, "LOGMSG"));//HERE
  
  
-    DBG("<"GREEN"Conf Show"NONE"> : server_ip = %s, port = %d, team = %s, name = %s\n%s",        server_ip, server_port, request.team ? "BLUE": "RED", request.name, request.msg);
+    DBG("<"GREEN"Conf Show"NONE"> : server_ip = %s, port = %d, team = %s, name = %s\n",        server_ip, server_port, request.team ? "BLUE": "RED", request.name);
  
     struct sockaddr_in server;    
 	server.sin_family = AF_INET;    
@@ -94,7 +94,6 @@ int main(int argc, char **argv) {
     char buff[512] = {0};
 	pthread_t recv_t ;
 	int retval = select(maxfd+1,&rfds,NULL,NULL,&tv);
-    printf(GREEN"You can  input continue:\n"NONE);
 	if(retval < 0){
 		perror("select()");
 		exit(1);
@@ -104,7 +103,7 @@ int main(int argc, char **argv) {
 			fprintf(stderr,"%s",response.msg);
 			exit(1);
 		}
-        DBG(GREEN"Server"NONE" : %s\n",response.msg);
+        printf(GREEN"Server"NONE" : %s\n",response.msg);
 		if(connect(sockfd, (struct sockaddr *)&server, sizeof(server))<0) {
         	perror("connect()");
         		exit(1);
@@ -117,6 +116,7 @@ int main(int argc, char **argv) {
            	signal(SIGINT,logout);
            	pthread_create(&recv_t, NULL, do_recv, NULL);
            	struct ChatMsg msg;
+            printf(GREEN"You can  input continue:\n"NONE);
             while (1) {
         		bzero(&msg, sizeof(msg));           
      	        msg.type=CHAT_WALL;

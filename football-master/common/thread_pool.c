@@ -63,23 +63,29 @@ void do_work(struct User *user){
         close(user->fd);
     } else if(msg.type & CHAT_FUNC) {
         if (msg.msg[0] =='#' && msg.msg[1] == '1'){
+            int count=0;
             sprintf(msg1.msg,"在线人员名单如下:");
             msg1.type = CHAT_FUNC;
             send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
             for (int i=0; i < MAX; i++){
                 if(rteam[i].online){
+                    count ++;
                     bzero(&msg1,sizeof(msg1));
                     strcpy(msg1.msg,rteam[i].name);
                     msg1.type = CHAT_FUNC;
-                    send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
+                     send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
                 }
                 if(bteam[i].online){
+                    count++;
                     bzero(&msg1,sizeof(msg1));
                     strcpy(msg1.msg,bteam[i].name);
                     msg1.type = CHAT_FUNC;
                     send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
                 } 
             }
+            sprintf(msg1.msg,"总计%d人在线",count);
+            msg1.type = CHAT_FUNC;
+            send(user->fd,(void *)&msg1,sizeof(struct ChatMsg),0);
         } else if (msg.msg[0]=='#' && msg.msg[1]=='2') {
             printf(GREEN"功能键#2\n"NONE);
             sprintf(msg1.msg,"感谢全体开发人员，407 is always good");
