@@ -1,35 +1,95 @@
 /*************************************************************************
-	> File Name: thread_pool.c
-	> Author: suyelu 
-	> Mail: suyelu@126.com
-	> Created Time: Thu 09 Jul 2020 02:50:28 PM CST
+    > File Name: thread_pool.c
+    > Author: suyelu 
+    > Mail: suyelu@126.com
+    > Created Time: Thu 09 Jul 2020 02:50:28 PM CST
  ************************************************************************/
 
 #include "head.h"
 extern int repollfd,bepollfd;
-
+extern struct User *rteam; 
+extern struct User *bteam;
+extern pthread_mutex_t rmutex;
+extern pthread_mutex_t bmutex;
 void do_work(struct User *user){
-    struct ChatMsg msg;
+    int j;
+    struct ChatMsg msg,msg1;
+    bzero(&msg, sizeof(msg));
+    bzero(&msg1, sizeof(msg1));
     recv(user->fd,(void*)&msg, sizeof(msg),0);
     if(msg.type & CHAT_WALL) {       
         printf("<%s> ~ %s \n",user->name,msg.msg);
-        sprintf(msg.name,"%s",user->name);
-        sprintf(msg.msg,"%s",msg.msg);
-    	msg.type = CHAT_WALL;
-    	zhuanfa(&msg);
+        strcpy(msg1.name,user->name);
+        strcpy(msg1.msg,msg.msg);
+        msg1.type = CHAT_WALL;
+        zhuanfa(&msg1);
     } else if(msg.type &CHAT_MSG) {        
+        char to[20] = {0};
+        int i =1;
+        for (; i <= 21; i++){
+            if(msg.msg[i] == ' ')
+                break;
+        }
+        if (msg.msg[i] != ' '|| msg.msg[0] != '@') {
+            memset(&msg1,0,sizeof(msg1));
+            msg1.type = CHAT_SYS;
+            sprintf(msg1.msg, "私聊格式错误!!!");
+            send(user->fd,(void *)&msg1,sizeof(msg1),0);
+        } else {
+            msg1.type = CHAT_MSG;
+            strcpy(msg1.name,user->name);
+            strncpy(to,msg.msg+1,i-1);
+            strcpy(msg1.msg,msg.msg+i+1);
+            send_to(to,&msg1,user->fd);
+        }
         printf("<%s> $ %s \n",user->name,msg.msg);
-        //sprintf(msg.msg,"<%s> : %s\n",user->name,msg.msg);
-        //send(user->fd, (void *)&msg, sizeof(msg), 0);
     } else if(msg.type & CHAT_FIN) {
         user->online = 0;
+        DBG(GREEN"Server Info"NONE" :%s logout \n",user->name);
+        sprintf(msg1.msg,"请注意 我们的好兄弟 %s 离开了直播间",user->name);
+        msg1.type = CHAT_SYS;
+        zhuanfa(&msg1);
+        if(user->team)
+            pthread_mutex_lock(&bmutex);
+        else
+            pthread_mutex_lock(&rmutex);
         int epollfd = user->team ? bepollfd :repollfd;
         del_event(epollfd,user->fd);
-        DBG(GREEN"Server Info"NONE" :%s logout \n",user->name);
-        sprintf(msg.msg,"%s logout",user->name);
-    	msg.type = CHAT_FIN;
-    	zhuanfa(&msg);
+        if(user->team)
+            pthread_mutex_unlock(&bmutex);
+        else
+            pthread_mutex_unlock(&rmutex);
+        printf(GREEN"Sever Info"NONE" : %s logout!\n",user->name);
         close(user->fd);
+    } else if(msg.type & CHAT_FUNC) {
+        if (msg.msg[0] =='#' && msg.msg[1] == '1'){
+            sprintf(msg1.msg,"在线人员名单如下:");
+            msg1.type = CHAT_FUNC;
+            send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
+            for (int i=0; i < MAX; i++){
+                if(rteam[i].online){
+                    bzero(&msg1,sizeof(msg1));
+                    strcpy(msg1.msg,rteam[i].name);
+                    msg1.type = CHAT_FUNC;
+                    send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
+                }
+                if(bteam[i].online){
+                    bzero(&msg1,sizeof(msg1));
+                    strcpy(msg1.msg,bteam[i].name);
+                    msg1.type = CHAT_FUNC;
+                    send(user->fd, (void *)&msg1, sizeof(struct ChatMsg), 0);
+                } 
+            }
+        } else if (msg.msg[0]=='#' && msg.msg[1]=='2') {
+            printf(GREEN"功能键#2\n"NONE);
+            sprintf(msg1.msg,"感谢全体开发人员，407 is always good");
+            msg1.type = CHAT_SYS;
+            zhuanfa(&msg1);
+        }else {
+            msg1.type = CHAT_SYS;
+            sprintf(msg1.msg, "功能格式错误!!!");
+            send(user->fd,(void *)&msg1,sizeof(msg1),0);
+        }
     }
 }
 

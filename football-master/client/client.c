@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
     char buff[512] = {0};
 	pthread_t recv_t ;
 	int retval = select(maxfd+1,&rfds,NULL,NULL,&tv);
-	
+    printf(GREEN"You can  input continue:\n"NONE);
 	if(retval < 0){
 		perror("select()");
 		exit(1);
@@ -120,14 +120,13 @@ int main(int argc, char **argv) {
             while (1) {
         		bzero(&msg, sizeof(msg));           
      	        msg.type=CHAT_WALL;
-                printf(GREEN"Please Input :\n"NONE);
                 scanf("%[^\n]s",msg.msg);
                 getchar();
                 if(strlen(msg.msg)){
                 	if (msg.msg[0] == '@') msg.type = CHAT_MSG;
                 	if (msg.msg[0] == '#') msg.type = CHAT_FUNC;
                 	send(sockfd, (void *)&msg ,sizeof(msg),0);	
-				}          
+				}          				
 			}			
 		}
 	}

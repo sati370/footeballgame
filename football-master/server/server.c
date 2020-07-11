@@ -15,19 +15,14 @@ struct Score score;
 int repollfd, bepollfd;
 struct User *rteam, *bteam;
 int port = 0;
+pthread_mutex_t rmutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t bmutex = PTHREAD_MUTEX_INITIALIZER;
 
 void logout1(int signum) {
     struct ChatMsg msg;
     msg.type = CHAT_FIN;
     strcpy(msg.msg,"Server Logout!");
-    for (int i=0; i < MAX; i++){
-    	if(rteam[i].online){
-    		send(rteam[i].fd, (void *)&msg, sizeof(msg), 0);
-		}
-        if(bteam[i].online){
-        	send(bteam[i].fd, (void *)&msg, sizeof(msg), 0);
-		}
-	}
+    zhuanfa(&msg);
 
     DBG(RED"Bye!\n"NONE);
     exit(0);

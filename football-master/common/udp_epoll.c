@@ -11,15 +11,15 @@ extern int port;
 extern struct User *rteam; 
 extern struct User *bteam;
 extern int repollfd, bepollfd;
-
+extern pthread_mutex_t rmutex,bmutex;
 void zhuanfa(struct ChatMsg *msg){
     for (int i=0; i < MAX; i++){
     	if(rteam[i].online){
-    		send(rteam[i].fd, (void *)&msg, sizeof(msg), 0);
+    		send(rteam[i].fd, (void *)msg, sizeof(struct ChatMsg), 0);
 		}
         if(bteam[i].online){
-        	send(bteam[i].fd, (void *)&msg, sizeof(msg), 0);
-		}
+        	send(bteam[i].fd, (void *)msg, sizeof(struct ChatMsg), 0);
+		} 
 	}
 }  
 int udp_connect(struct sockaddr_in *client) {
@@ -107,6 +107,10 @@ int check_online(struct LogRequest *request) {
 void add_to_sub_reactor(struct User *user) {
 	struct ChatMsg msg;
     struct User *team = (user->team ? bteam : rteam);
+    if(user->team)
+        pthread_mutex_lock(&bmutex);
+    else
+        pthread_mutex_lock(&rmutex);
     int sub = find_sub(team);
     if (sub < 0) {
         fprintf(stderr,"Full Team!\n");
@@ -115,8 +119,13 @@ void add_to_sub_reactor(struct User *user) {
 	team[sub] = *user;
     team[sub].online = 1;
     team[sub].flag = 10;
+    printf(YELLOW"Server Info:"NONE"%s success Login.\n",team[sub].name);
+    if(user->team)
+        pthread_mutex_unlock(&bmutex);
+    else
+        pthread_mutex_unlock(&rmutex);
     DBG(L_RED"sub = %d, name = %s \n",sub,team[sub].name);
-   	sprintf(msg.msg,"%s Login succsee",team[sub].name);
+   	sprintf(msg.msg,"%s 进入了直播间",team[sub].name);
     msg.type = CHAT_SYS;
     zhuanfa(&msg);
     if(user->team)

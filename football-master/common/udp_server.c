@@ -6,6 +6,8 @@
  ************************************************************************/
 
 #include "head.h"
+extern struct User *rteam; 
+extern struct User *bteam;
 
 int socket_create_udp(int port) {
     int server_listen;
@@ -25,4 +27,28 @@ int socket_create_udp(int port) {
         return -1;
     }
     return server_listen;
+}
+
+void send_to(char *name,struct ChatMsg *msg, int fd) {
+	
+	//|| !strcmp(name,rteam[i].real_name)|| !strcmp(name,bteam[i].real_name)
+	int flag = 0;
+	for (int i=0; i < MAX; i++){
+		if(rteam[i].online && (!strcmp(name,rteam[i].name)) ){
+			send(rteam[i].fd,msg,sizeof(struct ChatMsg),0); 
+			flag = 1;
+			break;
+		}
+		if(bteam[i].online && (!strcmp(name,bteam[i].name)) ){
+			send(bteam[i].fd,msg,sizeof(struct ChatMsg),0); 
+			flag = 1;
+			break;
+		}
+	}
+	if(!flag) {
+		memset(msg->msg,0,sizeof(msg->msg));
+		sprintf(msg->msg,"用户 %s 不在线，或者用户名错误!",name);
+		msg->type = CHAT_SYS;
+		send(fd,msg,sizeof(struct ChatMsg), 0);
+	}
 }
